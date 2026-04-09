@@ -32,13 +32,16 @@ var allServicesCmd = &cobra.Command{
 			fmt.Println("No services Yet")
 			fmt.Println("\n")
 		} else {
-			for _, service := range services {
+			for i, service := range services {
 				fmt.Println("\n")
 				fmt.Println("Name: " + service.Name)
 				fmt.Println("Id: " + service.Id)
 				fmt.Println("Alert Level: " + service.AlertLevel)
 				fmt.Println("Health: " + service.Health)
 				fmt.Println("Total Logs: " + strconv.Itoa(service.LogCount))
+				if i == len(services)-1 {
+					fmt.Println("\n")
+				}
 			}
 		}
 	},
