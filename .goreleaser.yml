@@ -30,6 +30,7 @@ homebrew_casks:
     repository:
       owner: Platon223
       name: homebrew-tap
+      token: "{{ .Env.TAP_GITHUB_TOKEN }}"
     commit_author:
       name: goreleaserbot
       email: bot@goreleaser.com
