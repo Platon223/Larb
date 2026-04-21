@@ -1,0 +1,38 @@
+version: 2
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: larb
+    main: ./cmd/larb
+    binary: larb
+    ldflags:
+      - -X main.OpenAIAPIKey={{ .Env.OPEN_AI_API_KEY }}
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+
+archives:
+  - formats:
+      - tar.gz
+    name_template: "larb_{{ .Os }}_{{ .Arch }}"
+
+homebrew_casks:
+  - name: larb
+    homepage: https://github.com/Platon223/Larb
+    description: CLI for LogArbor
+    repository:
+      owner: Platon223
+      name: homebrew-tap
+    commit_author:
+      name: goreleaserbot
+      email: bot@goreleaser.com
+
+checksum:
+  name_template: "checksums.txt"

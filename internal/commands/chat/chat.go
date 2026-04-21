@@ -15,6 +15,9 @@ import (
 
 func fetchDocs() (string, error) {
 	larbReadme, err := http.Get("https://raw.githubusercontent.com/Platon223/Larb/main/README.md")
+	if err != nil {
+		return "", nil
+	}
 
 	logArborReadme, err := http.Get("https://raw.githubusercontent.com/Platon223/LogArbor/main/README.md")
 	if err != nil {
@@ -26,6 +29,7 @@ func fetchDocs() (string, error) {
 	logArborBytes, _ := io.ReadAll(logArborReadme.Body)
 
 	return fmt.Sprintf(`
+	Your name is Logby and you are a AI Chat Assistant for Larb and LogArbor,
 LARB CLI DOCS:
 %s
 
@@ -43,7 +47,6 @@ func StartChat(apiKey string) error {
 
 	client := openai.NewClient(apiKey)
 
-	// keep conversation history
 	messages := []openai.ChatCompletionMessage{
 		{
 			Role:    openai.ChatMessageRoleSystem,
@@ -73,13 +76,11 @@ func StartChat(apiKey string) error {
 			continue
 		}
 
-		// add user message to history
 		messages = append(messages, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleUser,
 			Content: input,
 		})
 
-		// call openai
 		resp, err := client.CreateChatCompletion(
 			context.Background(),
 			openai.ChatCompletionRequest{
@@ -93,12 +94,11 @@ func StartChat(apiKey string) error {
 
 		reply := resp.Choices[0].Message.Content
 
-		// add assistant reply to history so it remembers context
 		messages = append(messages, openai.ChatCompletionMessage{
 			Role:    openai.ChatMessageRoleAssistant,
 			Content: reply,
 		})
 
-		fmt.Println("\nLarb:", reply)
+		fmt.Println("\nLogby:", reply)
 	}
 }
