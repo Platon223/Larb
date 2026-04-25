@@ -12,7 +12,7 @@ import (
 // tailCmd represents the tail command
 var tailCmd = &cobra.Command{
 	Use:   "tail",
-	Short: "Tail command gets logs or metrics live.",
+	Short: "Tail command gets logs live.",
 }
 
 var logsLiveCmd = &cobra.Command{
