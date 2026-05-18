@@ -12,7 +12,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-var Version string = "v1.0.7"
+var Version string = "v1.0.8"
 
 // Root command
 
