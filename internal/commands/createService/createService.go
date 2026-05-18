@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
+	"fmt"
 
 	getJwtToken "github.com/Platon223/Larb/internal/domain/jwt"
 )
@@ -29,7 +30,11 @@ func ConfigUser(apiKey string) *User {
 
 func (u *User) CreateService(name string, alertLevel string) (string, error) {
 
-	jwtToken, err := getJwtToken.GetJwt(u.apiKey)
+	// Define the regular get client
+	regularGet := getJwtToken.RegularGet{}
+
+	// Use the client to get the token from viper
+	jwtToken, err := getJwtToken.WithType(regularGet, u.apiKey)
 
 	if err != nil {
 		return "", err
@@ -49,7 +54,7 @@ func (u *User) CreateService(name string, alertLevel string) (string, error) {
 	req, err := http.NewRequest("POST", "https://logarbor.com/api/v1/services/create", bytes.NewBuffer(jsonBody))
 
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+jwtToken)
@@ -60,6 +65,37 @@ func (u *User) CreateService(name string, alertLevel string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
+	if resp.StatusCode == 401 {
+	
+		// Define the expired get client
+		expiredGet := getJwtToken.ExpiredGet{}
+
+		// Use the client to fetch the new token
+		newJwtToken, err := getJwtToken.WithType(expiredGet, u.apiKey)
+
+		if err != nil {
+			return "", fmt.Errorf("Something went wrong. Try again or check your internet connection.")
+		}
+
+		req, err = http.NewRequest("POST", "https://logarbor.com/api/v1/services/create", bytes.NewBuffer(jsonBody))
+
+		if err != nil {
+			return "", fmt.Errorf("Something went wrong. Try again or check your internet connection.")
+		}
+
+		req.Header.Set("Authorization", "Bearer "+newJwtToken)
+		req.Header.Set("Content-Type", "application/json")
+
+		resp, err = http.DefaultClient.Do(req)
+
+		if err != nil {
+			return "", fmt.Errorf("Status Code: %d. Something went wrong. Try again or check your internet connection.", resp.StatusCode)
+		}	
+
+		defer resp.Body.Close()
+
+	}	
 
 	defer resp.Body.Close()
 

@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	createservice "github.com/Platon223/Larb/internal/commands/createService"
+	"github.com/Platon223/Larb/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -18,16 +19,40 @@ var alertLevel string
 var createServiceCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Creates a new service.",
-	Run: func(cmd *cobra.Command, args []string) {
-		user := createservice.ConfigUser(viper.GetString("apiKey"))
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Runs with a spinner
 
-		result, err := user.CreateService(name, alertLevel)
+		return ui.WithSpinner("Creating your new service...", func() error {
 
-		if err != nil {
-			fmt.Println(err)
-		}
+			allowedLevels := map[string]struct{}{
+				"debug": {},
+				"info": {},
+				"warning": {},
+				"error": {},
+				"critical": {},
+			}
 
-		fmt.Printf("Status: %s \n", result)
+			if _, ok := allowedLevels[alertLevel]; !ok {
+				fmt.Println("Allowed Alert Levels: [debug, info, warning, error, critical]")
+				return nil
+			}
+			
+			user := createservice.ConfigUser(viper.GetString("apiKey"))
+
+			result, err := user.CreateService(name, alertLevel)
+
+			if err != nil {
+				fmt.Println()
+				fmt.Println(err)
+				return nil
+			}
+
+			fmt.Println()
+			fmt.Println("Status: ", result)
+			fmt.Println()
+
+			return nil
+		})
 	},
 }
 

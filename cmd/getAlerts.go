@@ -5,9 +5,10 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
+	"github.com/charmbracelet/glamour"
 
 	getalerts "github.com/Platon223/Larb/internal/commands/getAlerts"
+	"github.com/Platon223/Larb/internal/ui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -16,34 +17,47 @@ import (
 var getAlertsCmd = &cobra.Command{
 	Use:   "alerts",
 	Short: "Gets user's alerts",
-	Run: func(cmd *cobra.Command, args []string) {
-		user := getalerts.ConfigUser(viper.GetString("apiKey"))
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return ui.WithSpinner("Fetching alerts...", func() error {
+			user := getalerts.ConfigUser(viper.GetString("apiKey"))
 
-		alerts, err := user.GetAlerts()
+			alerts, err := user.GetAlerts()
 
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		for i, alert := range alerts {
-			fmt.Println("\n")
-			fmt.Println("Id: ", alert.Id)
-			fmt.Println("Message: ", alert.Message)
-			fmt.Println("Level: ", strings.ToUpper(alert.Level))
-			fmt.Println("Time: ", alert.Time)
-			fmt.Println("UserId: ", alert.UserId)
-			fmt.Println("ServiceId: ", alert.ServiceId)
-			fmt.Println("Service Name: ", alert.ServiceName)
-			if alert.Viewed {
-				fmt.Println("Viewed: True")
-			} else {
-				fmt.Println("Viewed: False")
+			if err != nil {
+				fmt.Println(err)
 			}
 
-			if i == len(alerts)-1 {
-				fmt.Println("\n")
+			rows := "| Message | Level | Time | ServiceName | Viewed |\n|---|---|---|---|---|\n"
+
+			for _, alert := range alerts {
+
+				viewed := ""
+
+				if alert.Viewed {
+					viewed = "True"
+				} else {
+					viewed = "False"
+				}
+
+				rows += fmt.Sprintf("| %s | %s | %s | %s | %s |\n",
+					alert.Message[:28]+"...",
+					alert.Level,
+					alert.Time,
+					alert.ServiceName,
+					viewed,
+				)
+
 			}
-		}
+
+			r, _ := glamour.NewTermRenderer(
+				glamour.WithStandardStyle("dracula"),
+				glamour.WithWordWrap(0),
+			)
+			out, _ := r.Render(rows)
+			fmt.Println(out)
+
+			return nil
+		})
 	},
 }
 

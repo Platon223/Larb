@@ -4,23 +4,22 @@ Copyright © 2026 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
+	"github.com/Platon223/Larb/internal/domain/update"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+var Version string = "v1.0.7"
+
 // Root command
 
 var rootCmd = &cobra.Command{
 	Use:   "larb",
-	Short: "A brief description of your application",
-	Long: `A longer description that spans multiple lines and likely contains
-examples and usage of using your application. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "Larb. CLI that connects developers with LogArbor all through the terminal.",
+	Long:  `Larb is a CLI tool that is used in order to interact with LogArbor. Larb allows developers to observe their applications' logs, alerts, and metrics in the terminal. Larb also has an extra feature that doesn't exist on the LogArbor platform itself: Logby, it is an AI chat assistant that helps developers get started with LogArbor and Larb. This tool is built for developers who like to do everything in their terminal even if it is Log Managment.`,
 }
 
 func Execute() {
@@ -51,4 +50,12 @@ func initConfig() {
 	viper.SetConfigType("yaml")
 
 	viper.ReadInConfig()
+
+	// Checks the new release for every 24 hours
+	lastCheck := viper.GetTime("lastUpdateCheck")
+	if time.Since(lastCheck) >= 24*time.Hour {
+		update.CheckReleases(Version)
+		viper.Set("lastUpdateCheck", time.Now())
+		viper.WriteConfig()
+	}
 }

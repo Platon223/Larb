@@ -5,9 +5,10 @@ package cmd
 
 import (
 	"fmt"
-	"strconv"
 
 	allservices "github.com/Platon223/Larb/internal/commands/allServices"
+	"github.com/Platon223/Larb/internal/ui"
+	"github.com/charmbracelet/glamour"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -17,33 +18,46 @@ import (
 var allServicesCmd = &cobra.Command{
 	Use:   "all",
 	Short: "Gets all the services a user has created.",
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// Runs with a spinner
 
-		user := allservices.ConfigUser(viper.GetString("apiKey"))
+		return ui.WithSpinner("Fetching services...", func() error {
+			user := allservices.ConfigUser(viper.GetString("apiKey"))
 
-		services, err := user.GetAllServices()
+			services, err := user.GetAllServices()
 
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		if len(services) == 0 {
-			fmt.Println("\n")
-			fmt.Println("No services Yet")
-			fmt.Println("\n")
-		} else {
-			for i, service := range services {
-				fmt.Println("\n")
-				fmt.Println("Name: " + service.Name)
-				fmt.Println("Id: " + service.Id)
-				fmt.Println("Alert Level: " + service.AlertLevel)
-				fmt.Println("Health: " + service.Health)
-				fmt.Println("Total Logs: " + strconv.Itoa(service.LogCount))
-				if i == len(services)-1 {
-					fmt.Println("\n")
-				}
+			if err != nil {
+				fmt.Println()
+				fmt.Println("Error: ", err)
+				return nil
 			}
-		}
+
+			if len(services) == 0 {
+				fmt.Println("")
+				fmt.Println("No services Yet")
+				fmt.Println("")
+			} else {
+				rows := "| Id | Name | Health | Alert Level | Total Logs |\n|---|---|---|---|---|\n"
+				for _, service := range services {
+					rows += fmt.Sprintf("| %s | %s | %s | %s | %d |\n",
+						service.Id,
+						service.Name,
+						service.Health,
+						service.AlertLevel,
+						service.LogCount,
+					)
+				}
+
+				r, _ := glamour.NewTermRenderer(
+					glamour.WithStandardStyle("dracula"),
+					glamour.WithWordWrap(0),
+				)
+				out, _ := r.Render(rows)
+				fmt.Println(out)
+			}
+			return nil
+		})
+
 	},
 }
 

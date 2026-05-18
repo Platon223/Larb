@@ -7,13 +7,32 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/charmbracelet/glamour"
 	"github.com/common-nighthawk/go-figure"
 	openai "github.com/sashabaranov/go-openai"
 )
 
 func fetchDocs() (string, error) {
+
+	// cache locations
+	homeDir, _ := os.UserHomeDir()
+	cacheFile := filepath.Join(homeDir, ".config", "larb", "docsCache.txt")
+	metaFile := filepath.Join(homeDir, ".config", "larb", "docsCacheTime.txt")
+	
+	// check if the cache is fresh
+	if data, err := os.ReadFile(metaFile); err == nil {
+        lastFetch, _ := time.Parse(time.RFC3339, string(data))
+        if time.Since(lastFetch) < 24*time.Hour {
+            cached, _ := os.ReadFile(cacheFile)
+			fmt.Println("Docs cached")
+            return string(cached), nil
+        }
+    }
+
 	larbReadme, err := http.Get("https://raw.githubusercontent.com/Platon223/Larb/main/README.md")
 	if err != nil {
 		return "", nil
@@ -27,15 +46,20 @@ func fetchDocs() (string, error) {
 
 	larbBytes, _ := io.ReadAll(larbReadme.Body)
 	logArborBytes, _ := io.ReadAll(logArborReadme.Body)
-
-	return fmt.Sprintf(`
+	docs := fmt.Sprintf(`
 	Your name is Logby and you are a AI Chat Assistant for Larb and LogArbor,
 LARB CLI DOCS:
 %s
 
 LOGARBOR DOCS:
 %s
-    `, string(larbBytes), string(logArborBytes)), nil
+    `, string(larbBytes), string(logArborBytes)) 
+
+	os.MkdirAll(filepath.Dir(cacheFile), 0755)
+    os.WriteFile(cacheFile, []byte(docs), 0644)
+    os.WriteFile(metaFile, []byte(time.Now().Format(time.RFC3339)), 0644)
+
+	return docs, nil
 }
 
 func StartChat(apiKey string) error {
@@ -56,10 +80,16 @@ func StartChat(apiKey string) error {
 
 	scanner := bufio.NewScanner(os.Stdin)
 
-	fig := figure.NewFigure("LOGBY", "standard", true)
+	fig := figure.NewFigure("Logby", "doom", true)
 	fig.Print()
 	fmt.Println()
-	fmt.Println("Logby — AI Chat Assistant. Ask me anything about Larb or LogArbor (type 'exit' to quit)")
+	out, _ := glamour.Render(`
+# Logby
+
+AI Chat Assistant. Ask me anything about Larb or LogArbor. Type 'exit' to quit
+
+	`, "dracula")
+	fmt.Println(out)
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 	for {

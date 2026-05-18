@@ -2,7 +2,7 @@ package allservices
 
 import (
 	"encoding/json"
-	"errors"
+	"fmt"
 	"net/http"
 
 	getJwtToken "github.com/Platon223/Larb/internal/domain/jwt"
@@ -42,16 +42,20 @@ func ConfigUser(apiKey string) *User {
 
 func (u *User) GetAllServices() ([]Service, error) {
 
-	jwtToken, err := getJwtToken.GetJwt(u.apiKey)
+	// Define the regular get client
+	regularGet := getJwtToken.RegularGet{}
+
+	// Use the client to fetch the token from viper
+	jwtToken, err := getJwtToken.WithType(regularGet, u.apiKey)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Something went wrong. Try again or check your internet connection.")
 	}
 
 	req, err := http.NewRequest("POST", "https://logarbor.com/api/v1/services/all_services", nil)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Something went wrong. Try again or check your internet connection.")
 	}
 
 	req.Header.Set("Authorization", "Bearer "+jwtToken)
@@ -59,11 +63,45 @@ func (u *User) GetAllServices() ([]Service, error) {
 	resp, err := http.DefaultClient.Do(req)
 
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Status Code: %d. Something went wrong. Try again or check your internet connection.", resp.StatusCode)
+	}
+
+	// If the token doesn't exist or is expired fetch the token from jwt api
+	if resp.StatusCode == 401 {
+
+		// Define the expired get client
+		expiredGet := getJwtToken.ExpiredGet{}
+
+		// Use the client to fetch the new token
+		newJwtToken, err := getJwtToken.WithType(expiredGet, u.apiKey)
+
+		if err != nil {
+			return nil, fmt.Errorf("Something went wrong. Try again or check your internet connection.")
+		}
+
+		req, err = http.NewRequest("POST", "https://logarbor.com/api/v1/services/all_services", nil)
+
+		if err != nil {
+			return nil, fmt.Errorf("Something went wrong. Try again or check your internet connection.")
+		}
+
+		req.Header.Set("Authorization", "Bearer "+newJwtToken)
+
+		resp, err = http.DefaultClient.Do(req)
+
+		if err != nil {
+			return nil, fmt.Errorf("Status Code: %d. Something went wrong. Try again or check your internet connection.", resp.StatusCode)
+		}
+
+		if resp.StatusCode != 200 {
+			return nil, fmt.Errorf("Status Code: %d. Something went wrong. Try again or check your internet connection.", resp.StatusCode)
+		}
+
+		defer resp.Body.Close()
 	}
 
 	if resp.StatusCode != 200 {
-		return nil, errors.New("Something went wrong while fetching your services. Please confirm that your api key is set correctly.")
+		return nil, fmt.Errorf("Status Code: %d. Something went wrong. Try again or check your internet connection.", resp.StatusCode)
 	}
 
 	defer resp.Body.Close()

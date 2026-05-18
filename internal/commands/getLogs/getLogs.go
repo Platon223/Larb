@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"slices"
+	"fmt"
 
 	getJwtToken "github.com/Platon223/Larb/internal/domain/jwt"
 )
@@ -40,7 +41,12 @@ func ConfigUser(apiKey string) *User {
 }
 
 func (u *User) GetLogs(serviceId string) (Logs, error) {
-	jwtToken, err := getJwtToken.GetJwt(u.apiKey)
+
+	// Define regular client 
+	regularClient := getJwtToken.RegularGet{}
+
+	// Use the client to get token from viper
+	jwtToken, err := getJwtToken.WithType(regularClient, u.apiKey)
 
 	if err != nil {
 		return Logs{}, err
@@ -58,6 +64,36 @@ func (u *User) GetLogs(serviceId string) (Logs, error) {
 
 	if err != nil {
 		return Logs{}, err
+	}
+
+	if resp.StatusCode == 401 {
+
+		// Define the expired get client
+		expiredGet := getJwtToken.ExpiredGet{}
+
+		// Use the client to fetch the new token
+		newJwtToken, err := getJwtToken.WithType(expiredGet, u.apiKey)
+
+		if err != nil {
+			return Logs{}, fmt.Errorf("Something went wrong. Try again or check your internet connection.")
+		}
+
+		req, err = http.NewRequest("POST", "https://logarbor.com/api/v1/logs/all_logs", nil)
+
+		if err != nil {
+			return Logs{}, fmt.Errorf("Something went wrong. Try again or check your internet connection.")
+		}
+
+		req.Header.Set("Authorization", "Bearer "+newJwtToken)
+
+		resp, err = http.DefaultClient.Do(req)
+
+		if err != nil {
+			return Logs{}, fmt.Errorf("Status Code: %d. Something went wrong. Try again or check your internet connection.", resp.StatusCode)
+		}	
+
+		defer resp.Body.Close()
+
 	}
 
 	defer resp.Body.Close()
