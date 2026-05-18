@@ -8,14 +8,6 @@ Larb is a CLI tool that is used in order to interact with <a href="https://githu
 
 ---
 
-## Setup Video
-
-<p align="center">
-  <video src="https://github.com/user-attachments/assets/0e5e0787-54e5-49de-b141-c1548e84cc06" width="600" controls></video>
-</p>
-
----
-
 # ⚙️ Setup
 
 Follow these steps to get started with Larb
@@ -77,13 +69,7 @@ larb all
 For more commands, please visit our <a href="https://logarbor.com/docs">docs</a>
 
 
----
- 
-### System Architecture Preview
-
-<p align="center">
-  <img src="https://i.imgur.com/15l8VMu.png" alt="System Architecture Diagram" width="800"/>
-</p>
+--- 
 
 
 ## Lisence
